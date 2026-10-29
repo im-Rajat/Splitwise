@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Category {
+  FOOD
+  TRANSPORT
+  ACCOMMODATION
+  ENTERTAINMENT
+  UTILITIES
+  OTHER
+}
+
+enum SplitMethod {
+  EQUAL
+  EXACT
+  PERCENTAGE
+}
+
+enum AuditEntityType {
+  EXPENSE
+  SETTLEMENT
+}
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  groups       Group[]
+  auditLogs    AuditLog[]
+}
+
+model Group {
+  id          String       @id @default(uuid())
+  name        String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     Member[]
+  expenses    Expense[]
+  settlements Settlement[]
+}
+
+model Member {
+  id              String         @id @default(uuid())
+  displayName     String
+  groupId         String
+  group           Group          @relation(fields: [groupId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  paidExpenses    Expense[]      @relation("ExpensePayer")
+  shares          ExpenseShare[]
+  paidSettlements Settlement[]   @relation("SettlementPayer")
+  receivedSettlements Settlement[] @relation("SettlementPayee")
+
+  @@unique([groupId, displayName])
+}
+
+model Expense {
+  id           String         @id @default(uuid())
+  groupId      String
+  group        Group          @relation(fields: [groupId], references: [id])
+  description  String?
+  totalAmount  Int
+  category     Category
+  categoryNote String?
+  splitMethod  SplitMethod
+  payerId      String
+  payer        Member         @relation("ExpensePayer", fields: [payerId], references: [id])
+  version      Int            @default(1)
+  deletedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  shares       ExpenseShare[]
+
+  @@index([groupId, deletedAt])
+}
+
+model ExpenseShare {
+  id        String   @id @default(uuid())
+  expenseId String
+  expense   Expense  @relation(fields: [expenseId], references: [id])
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id])
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@unique([expenseId, memberId])
+  @@index([memberId])
+}
+
+model Settlement {
+  id        String    @id @default(uuid())
+  groupId   String
+  group     Group     @relation(fields: [groupId], references: [id])
+  payerId   String
+  payer     Member    @relation("SettlementPayer", fields: [payerId], references: [id])
+  payeeId   String
+  payee     Member    @relation("SettlementPayee", fields: [payeeId], references: [id])
+  amount    Int
+  version   Int       @default(1)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([groupId, deletedAt])
+  @@index([payerId, payeeId])
+}
+
+model AuditLog {
+  id            String          @id @default(uuid())
+  entityType    AuditEntityType
+  entityId      String
+  action        AuditAction
+  previousState Json?
+  newState      Json?
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  createdAt     DateTime        @default(now())
+
+  @@index([entityType, entityId])
+}
