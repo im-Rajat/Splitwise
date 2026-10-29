@@ -1,7 +1,12 @@
 import { api } from './client';
 
-export async function exportGroupJson(groupId: string): Promise<Blob> {
-  const res = await api.get(`/groups/${groupId}/export`, { responseType: 'blob' });
+export type ExportFormat = 'text' | 'pdf';
+
+export async function exportGroup(groupId: string, format: ExportFormat): Promise<Blob> {
+  const res = await api.get(`/groups/${groupId}/export`, {
+    params: { format },
+    responseType: 'blob',
+  });
   return res.data;
 }
 

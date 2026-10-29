@@ -181,7 +181,7 @@ The frontend calls `/api` on its own origin. In development, Vite proxies that p
      - With **Percentage**, enter each person's percentage. The percentages must add up to 100. Rounding leftovers go to the people with the largest fractions.
    - **Balances**: see who owes whom, each member's net balance, and the simplified list of payments. Record a settlement here when someone pays someone back.
    - **Dashboard**: group totals, paid vs share per member, and spending by category.
-   - **Settings**: rename the group. To export the ledger as text or PDF, use the [export endpoint](#balances-dashboard-audit-log-export) (see [Known issues](#known-issues)).
+   - **Settings**: rename the group, and export the ledger as PDF or plain text.
 4. Edit or delete expenses and settlements as needed. Deleting is a soft delete: the record drops out of balances but stays in the audit log.
 5. If two people edit the same record at once, the second save is rejected with a message asking you to reload and try again.
 
@@ -230,7 +230,7 @@ All three return `{ accessToken, refreshToken, expiresIn, user }`. Access tokens
 | Method | Path                                   | Notes |
 |--------|----------------------------------------|-------|
 | POST   | `/groups/:groupId/expenses`            | Create an expense (see body below) |
-| GET    | `/groups/:groupId/expenses`            | Paginated list, newest first |
+| GET    | `/groups/:groupId/expenses`            | Paginated list, newest first. Optional `category` filter |
 | GET    | `/groups/:groupId/expenses/:expenseId` | One expense with its shares |
 | PUT    | `/groups/:groupId/expenses/:expenseId` | Full replace. Same body as create, plus `version` |
 | DELETE | `/groups/:groupId/expenses/:expenseId` | Soft delete |
@@ -347,11 +347,6 @@ cd frontend && npm test
 ```
 
 The backend integration tests in `backend/tests/integration/api.test.ts` are placeholders for now. They do not yet set up a test database.
-
-## Known issues
-
-- Endpoints that validate query parameters return `500` on Express 5: the group list, expense and settlement lists, audit log, and export. The `validate` middleware assigns to `req.query`, which is read-only in Express 5.
-- The **Export JSON** button in Settings calls `/export` without a `format` and saves the result as `.json`. The API only accepts `format=text` or `format=pdf`, so the button fails.
 
 ## Limitations
 

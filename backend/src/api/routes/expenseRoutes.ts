@@ -2,8 +2,11 @@ import { Router, Response, NextFunction } from 'express';
 import { AuthRequest, authMiddleware } from '../middleware/auth';
 import { authorizeGroupAccess } from '../middleware/authorize';
 import { validate } from '../middleware/validate';
-import { createExpenseSchema, updateExpenseSchema } from '../validators/expenseValidators';
-import { paginationSchema } from '../../utils/pagination';
+import {
+  createExpenseSchema,
+  updateExpenseSchema,
+  listExpensesQuerySchema,
+} from '../validators/expenseValidators';
 import * as expenseService from '../../services/expenseService';
 
 export const expenseRoutes = Router();
@@ -30,7 +33,7 @@ expenseRoutes.post(
 expenseRoutes.get(
   '/:groupId/expenses',
   authorizeGroupAccess,
-  validate(paginationSchema, 'query'),
+  validate(listExpensesQuerySchema, 'query'),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const result = await expenseService.listExpenses(

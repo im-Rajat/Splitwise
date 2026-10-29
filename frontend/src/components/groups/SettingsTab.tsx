@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getGroup } from '../../api/groups';
 import { useUpdateGroup } from '../../hooks/useGroups';
-import { exportGroupJson, downloadBlob } from '../../api/export';
+import { exportGroup, downloadBlob, ExportFormat } from '../../api/export';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
@@ -15,7 +15,8 @@ export function SettingsTab({ groupId }: { groupId: string }) {
 
   const [name, setName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  // Tracks which export is running so only that button shows a spinner.
+  const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
 
   const handleRename = () => {
     if (!name.trim()) return;
@@ -27,16 +28,17 @@ export function SettingsTab({ groupId }: { groupId: string }) {
     });
   };
 
-  const handleExport = async () => {
-    setExporting(true);
+  const handleExport = async (format: ExportFormat) => {
+    setExportingFormat(format);
     try {
-      const blob = await exportGroupJson(groupId);
-      downloadBlob(blob, `${group?.name || 'group'}-export.json`);
+      const blob = await exportGroup(groupId, format);
+      const extension = format === 'pdf' ? 'pdf' : 'txt';
+      downloadBlob(blob, `${group?.name || 'group'}-ledger.${extension}`);
       toast.success('Export downloaded');
     } catch {
       toast.error('Export failed');
     } finally {
-      setExporting(false);
+      setExportingFormat(null);
     }
   };
 
@@ -62,8 +64,24 @@ export function SettingsTab({ groupId }: { groupId: string }) {
 
       <section>
         <h3 className="text-lg font-semibold mb-2">Export</h3>
-        <p className="text-sm text-gray-500 mb-2">Download all group data as a JSON file.</p>
-        <Button onClick={handleExport} loading={exporting}>Export JSON</Button>
+        <p className="text-sm text-gray-500 mb-2">Download the group ledger: expenses, settlements and current balances.</p>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => handleExport('pdf')}
+            loading={exportingFormat === 'pdf'}
+            disabled={exportingFormat !== null}
+          >
+            Export PDF
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => handleExport('text')}
+            loading={exportingFormat === 'text'}
+            disabled={exportingFormat !== null}
+          >
+            Export text
+          </Button>
+        </div>
       </section>
     </div>
   );

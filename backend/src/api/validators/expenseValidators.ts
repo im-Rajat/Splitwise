@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationSchema } from '../../utils/pagination';
 
 const categoryEnum = z.enum(['FOOD', 'TRANSPORT', 'ACCOMMODATION', 'ENTERTAINMENT', 'UTILITIES', 'OTHER']);
 const splitMethodEnum = z.enum(['EQUAL', 'EXACT', 'PERCENTAGE']);
@@ -51,6 +52,11 @@ export const createExpenseSchema = z
     },
     { message: 'shares required for EXACT/PERCENTAGE split', path: ['shares'] },
   );
+
+// Listing accepts an optional category filter on top of pagination.
+export const listExpensesQuerySchema = paginationSchema.extend({
+  category: categoryEnum.optional(),
+});
 
 export const updateExpenseSchema = createExpenseSchema.extend({
   version: z.number().int().positive(),
